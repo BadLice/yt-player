@@ -6,69 +6,83 @@ import searchYoutube from 'youtube-api-v3-search';
 import './App.css';
 import NavBar from './components/nav.bar';
 import ThumbnailButton from './components/channel.thumbnail.button';
+import { gapi } from 'gapi-script';
 
 export const YT_KEY = 'AIzaSyAwLbnuIrnPqxjuP2jKqBPEgxX7PlsfM7w';
-export const useSearch = YT_KEY => {
-	const [searchResult, setSearchResult] = useState(null);
 
-	const [searchQuery, search] = useState(null);
-	const [searchType, setSearchType] = useState('video'); //channel - playlist - video;
+export const useSearch = () => {
+	const [searchResult, setSearchResult] = useState(null);
+	const [searchParams, search] = useState(null);
 
 	useEffect(() => {
-		//search process
-		if (searchQuery) {
+		if (gapi && gapi.client && searchParams) {
 			let subscribed = true;
-
-			const options = {
-				q: searchQuery.trim(),
-				part: 'snippet',
-				type: searchType
-			};
-
-			searchYoutube(YT_KEY, options).then(data => {
+			searchParams.part = 'snippet';
+			gapi.client.youtube.search.list(searchParams).then(res => {
 				if (subscribed) {
-					console.log(data);
-					setSearchResult(data);
+					setSearchResult(res.result);
+					search(null);
 				}
 			});
 			return () => (subscribed = false);
 		}
-	}, [searchQuery]);
+	}, [gapi, searchParams, search]);
 
-	return [searchResult, search, setSearchType];
+	return [searchResult, search];
 };
 
-export const useChannel = YT_KEY => {
-	const apiLink = 'https://www.googleapis.com/youtube/v3/channels?';
+export const useChannels = () => {
 	const [channelResult, setChannelResult] = useState(null);
 	const [channelId, getChannel] = useState(null);
 
 	useEffect(() => {
-		if (channelId) {
+		if (gapi && gapi.client && channelId) {
 			let subscribed = true;
-			axios
-				.get(
-					apiLink +
-						'part=snippet&id=' +
-						channelId +
-						'&fields=items%2Fsnippet%2Fthumbnails&key=' +
-						YT_KEY
-				)
-				.then(({ data }) => {
+			gapi.client.youtube.channels
+				.list({
+					part: 'snippet',
+					id: channelId
+				})
+				.then(res => {
 					if (subscribed) {
-						console.log(channelId, data);
-						setChannelResult(data.items[0].snippet);
+						setChannelResult(res.result);
+						getChannel(null);
 					}
 				});
 			return () => (subscribed = false);
 		}
-	}, [channelId]);
+	}, [gapi, channelId]);
 
 	return [channelResult, getChannel];
 };
 
+export const useGapi = () => {
+	const [resApi, setGapi] = useState(null);
+
+	useEffect(() => {
+		if (!resApi) {
+			//load the gapi
+			const script = document.createElement('script');
+			script.src = 'https://apis.google.com/js/client.js';
+
+			script.onload = () => {
+				gapi.load('client', () => {
+					gapi.client.setApiKey(YT_KEY);
+					gapi.client.load('youtube', 'v3', () => {
+						setGapi(gapi);
+					});
+				});
+			};
+			document.body.appendChild(script);
+		}
+	}, [resApi]);
+
+	return resApi;
+};
+
 const App = () => {
-	const [searchResult, search, setSearchType] = useSearch(YT_KEY);
+	const gapi = useGapi(YT_KEY);
+	const [searchResult, search] = useSearch();
 
 	return (
 		<div className='app-background'>

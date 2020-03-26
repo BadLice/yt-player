@@ -13,7 +13,10 @@ const NavBar = props => {
 
 	const search = e => {
 		e && e.preventDefault();
-		props.search(searchInput.current.value.trim());
+		props.search({
+			maxResults: 2,
+			q: searchInput.current.value.trim()
+		});
 	};
 
 	return (

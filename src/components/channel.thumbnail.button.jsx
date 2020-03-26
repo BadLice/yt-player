@@ -7,26 +7,33 @@ import {
 	Nav,
 	NavDropdown
 } from 'react-bootstrap';
-import { useChannel, YT_KEY } from '../App';
+import { useChannels } from '../App';
 
 const ChannelThumbnailButton = props => {
-	const [channelResult, getChannel] = useChannel(YT_KEY);
+	const [channelsResult, getChannels] = useChannels();
 
 	useEffect(() => {
 		if (props.channelId) {
-			getChannel(props.channelId);
+			getChannels(props.channelId);
 		}
 	}, [props.channelId]);
 
-	if (!channelResult) return <></>;
+	if (!channelsResult) return <></>;
 	return (
 		<>
 			<Button variant='outline-danger' className='pl-1'>
-				<img
-					src={channelResult.thumbnails.default.url}
-					alt={props.channelId + '-thumbnail'}
-					className='img-thumbnail size-thumbnail rounded-circle mr-2'
-				></img>
+				{!channelsResult ? (
+					<div className='img-thumbnail size-thumbnail rounded-circle mr-2 bg-secondary' />
+				) : (
+					<img
+						src={
+							channelsResult.items[0].snippet.thumbnails.default
+								.url
+						}
+						alt={props.channelId + '-thumbnail'}
+						className='img-thumbnail size-thumbnail rounded-circle mr-2'
+					/>
+				)}
 				{props.channelTitle}
 			</Button>
 		</>
